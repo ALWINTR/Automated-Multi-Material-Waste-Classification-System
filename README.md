@@ -1,62 +1,115 @@
-# Automated Smart Waste Segregation System (ULN2003 + 28BYJ-48)
+# ♻️ Automated Smart Waste Segregation System (Multi-Sensor Carousel Classification)
 
-A complete project guide for sorting waste into **Metallic**, **Wet/Organic**, and **Dry/Plastic** categories using an **Arduino Uno**, **28BYJ-48 Stepper Motor + ULN2003 Driver**, **Servo Motor**, **IR Sensor**, **Inductive Proximity Sensor**, **Raindrop/Moisture Sensor**, and **LM2596 Buck Converter**.
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-00f0ff?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ALWINTR/waste-segregation-system)
+[![Developer](https://img.shields.io/badge/Developer-Alwin_T_R-0284c7?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/alwintr)
+[![Platform](https://img.shields.io/badge/Platform-Arduino_Uno_%26_Stepper-38bdf8?style=for-the-badge&logo=arduino&logoColor=white)](https://github.com/ALWINTR)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
----
-
-## 1. Power Distribution Scheme (All Actuators on 5V)
-
-Using the **ULN2003 driver + 28BYJ-48 5V Stepper Motor** simplifies the circuit: **the Stepper Motor, Servo Motor, and Arduino can now all run directly from the 5V Buck Converter rail!**
-
-* **Main Adapter**: 9V 2A DC Adapter
-* **9V Direct Rail**:
-  * LM2596 Buck Converter `IN+` / `IN-`
-  * Inductive Proximity Sensor `Brown (VCC)`
-* **Buck Converter (LM2596)**:
-  * Adjust potentiometer to output **5.0V DC**.
-* **5.0V Regulated Bus**:
-  * Powers Arduino Uno `5V` pin
-  * Powers ULN2003 Stepper Driver `+` pin (5V)
-  * Powers Servo Motor `VCC` (Red wire)
-  * Powers IR Sensor & Rain Sensor `VCC`
-* **Common Ground**:
-  * Connect all GND lines together (9V adapter GND, Buck OUT-, Arduino GND, ULN2003 `-` pin, Sensor GNDs).
+An industrial automated waste classification station that automatically detects, categorizes, and sorts incoming waste into metallic and non-metallic / dry categories using precision stepper motor indexing, inductive proximity sensing, optical drop detection, and servo-actuated sorting flaps.
 
 ---
 
-## 2. Complete Pinout & Wiring Connections
+## 📌 System Architecture & Mechanics
 
-### A. Sensors to Arduino Uno
-| Sensor / Module | Sensor Pin | Arduino Pin / Power Source | Notes |
+The system operates as a closed-loop automated classification station:
+1. **Intake & Drop Sensing**: The optical IR sensor detects the insertion of an object into the inspection chute.
+2. **Material Classification**: The **inductive proximity sensor** interrogates the material. High Eddy-current dampening confirms metallic composition; absence flags non-metallic waste.
+3. **Carousel Indexing**: A **stepper motor (28BYJ-48 / NEMA 17)** indexes the rotary carousel to align the correct destination bin beneath the sorting chute.
+4. **Sorting Actuation**: A high-speed **SG90 micro-servo** actuates the trapdoor flap to drop the material into the target compartment.
+
+```
+       ┌───────────────────────────────┐
+       │   Incoming Waste Insertion    │
+       └───────────────┬───────────────┘
+                       │
+                       ▼
+       ┌───────────────────────────────┐
+       │  Optical IR Drop Detection    │
+       └───────────────┬───────────────┘
+                       │ Item Present
+                       ▼
+       ┌───────────────────────────────┐
+       │   Inductive Metal Sensing     │
+       └───────┬───────────────┬───────┘
+               │               │
+      [Metal Detected]   [Non-Metallic]
+               │               │
+               ▼               ▼
+       ┌───────────────────────────────┐
+       │  Stepper Carousel Indexing    │
+       │  (Rotate to Designated Bin)   │
+       └───────────────┬───────────────┘
+                       │
+                       ▼
+       ┌───────────────────────────────┐
+       │  Servo Trapdoor Flap Eject    │
+       └───────────────────────────────┘
+```
+
+---
+
+## ⚙️ Hardware Components & Specifications
+
+| Component | Part / Model | Operating Specs | Function |
 | :--- | :--- | :--- | :--- |
-| **IR Obstacle Sensor** | VCC / GND | 5V Bus / Common GND | Presence detection |
-| | OUT / DO | **Digital Pin 2** | Low on detection |
-| **Inductive Proximity** | Brown (VCC) | **+9V DC Rail** (Adapter) | Operates on 6V-36V |
-| *(LJ12A3-4-Z/BX - NPN NO)* | Blue (GND) | Common GND | |
-| | Black (Signal) | **Digital Pin 3** | Arduino uses `INPUT_PULLUP` |
-| **Raindrop Sensor** | VCC / GND | 5V Bus / Common GND | Moisture detection |
-| | DO | **Digital Pin 4** | Digital threshold |
-| | AO | **Analog Pin A0** | Analog moisture value |
-
-### B. Actuators to Arduino Uno
-| Actuator / Driver | Module Pin | Arduino Pin / Power | Notes |
-| :--- | :--- | :--- | :--- |
-| **ULN2003 Stepper Driver** | `+` (VCC) | **5V Bus** (Buck Converter) | Powers 28BYJ-48 motor |
-| | `-` (GND) | Common GND | |
-| | `IN1` | **Digital Pin 5** | Phase A |
-| | `IN2` | **Digital Pin 6** | Phase B |
-| | `IN3` | **Digital Pin 7** | Phase C |
-| | `IN4` | **Digital Pin 8** | Phase D |
-| **Servo Motor (SG90 / MG995)**| Red (VCC) | **5V Bus** (Buck Converter) | Do not power from Uno 5V |
-| | Brown / Black | Common GND | |
-| | Orange / Yellow | **Digital Pin 9** | PWM angle control |
-| **Status Indicators** | LEDs & Buzzer | **D10 (Metal), D11 (Wet), D12 (Dry), D13 (Buzzer)** | Visual/audio feedback |
+| **Microcontroller** | Arduino Uno (ATmega328P) | 16MHz, 5V Logic | Master state machine controller |
+| **Stepper Motor** | 28BYJ-48 / NEMA 17 | 5V / 12V Unipolar / Bipolar | Rotary carousel positioning (64:1 gear) |
+| **Stepper Driver** | ULN2003 / A4988 Module | Darlington Array / 1/16 Microstepping | High-current coil phase energization |
+| **Metal Sensor** | LJ12A3-4-Z/BX / Inductive Probe | 6-36V (Regulated to 5V) | High-frequency Eddy current sensing |
+| **Drop Sensor** | TCRT5000 / FC-51 Optical IR | 5V Analog/Digital | Instantaneous object entry detection |
+| **Sorting Servo** | TowerPro SG90 9g Servo | 50Hz PWM (0.5ms - 2.5ms) | Rapid mechanical sorting trapdoor |
 
 ---
 
-## 3. Stepper Angle Mapping (28BYJ-48)
+## 🔌 Circuit Pinout Table
 
-* In 4-step sequence, 1 full rotation ($360^\circ$) = **2048 steps**.
-* **Bin 1 (Metal)**: $0^\circ \rightarrow \mathbf{0\text{ steps}}$
-* **Bin 2 (Wet)**: $120^\circ \rightarrow \frac{2048 \times 120}{360} \approx \mathbf{683\text{ steps}}$
-* **Bin 3 (Dry)**: $240^\circ \rightarrow \frac{2048 \times 240}{360} \approx \mathbf{1365\text{ steps}}$
+| Module Signal | Arduino Uno Pin | Direction | Description |
+| :--- | :--- | :--- | :--- |
+| **Stepper IN1 (Coil A)** | Digital Pin 8 | Output | Motor phase 1 energize |
+| **Stepper IN2 (Coil B)** | Digital Pin 9 | Output | Motor phase 2 energize |
+| **Stepper IN3 (Coil C)** | Digital Pin 10 | Output | Motor phase 3 energize |
+| **Stepper IN4 (Coil D)** | Digital Pin 11 | Output | Motor phase 4 energize |
+| **Sorting Servo PWM** | Digital Pin 6 | PWM Output | Trapdoor open/close (0° / 90°) |
+| **IR Object Drop Sensor** | Digital Pin 2 | Input (Pull-up) | External trigger for item arrival |
+| **Inductive Metal Sensor** | Digital Pin 3 | Input | Active LOW when metal detected |
+| **Status LED (Metal)** | Digital Pin 4 | Output | Blue indicator for metallic waste |
+| **Status LED (General)** | Digital Pin 5 | Output | Green indicator for non-metal waste |
+
+---
+
+## 🧠 Software Implementation & Code Structure
+
+The Arduino firmware (`waste_segregation.ino`) implements a non-blocking finite state machine (FSM):
+- `STATE_IDLE`: Polling IR sensor while holding carousel at home position.
+- `STATE_INSPECT`: Sampling inductive sensor readings over 200ms to eliminate false negatives.
+- `STATE_INDEX_CAROUSEL`: Stepping the motor smoothly using half-step 8-phase sequences to prevent vibration.
+- `STATE_DUMP`: Opening servo trapdoor for 1200ms and verifying item clearance.
+- `STATE_RESET`: Returning carousel to baseline home index.
+
+---
+
+## 🚀 Getting Started
+
+1. Clone repository:
+   ```bash
+   git clone https://github.com/ALWINTR/waste-segregation-system.git
+   ```
+2. Open `waste_segregation.ino` in Arduino IDE.
+3. Verify board selection is set to **Arduino Uno**.
+4. Compile and upload to board.
+5. Review `IMPLEMENTATION_GUIDE.md` for full mechanical 3D printing and mounting details.
+
+---
+
+## 👨‍💻 Author
+
+**Alwin T R** — Robotics & Automation Engineer  
+- 💼 LinkedIn: [linkedin.com/in/alwintr](https://www.linkedin.com/in/alwintr)  
+- 🌌 Portfolio: [alwintr.github.io](https://alwintr.github.io)  
+- 💻 GitHub: [github.com/ALWINTR](https://github.com/ALWINTR)
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.

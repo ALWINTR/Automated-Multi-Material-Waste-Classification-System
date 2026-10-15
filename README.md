@@ -1,101 +1,133 @@
 # Automated Multi Material Waste Classification System
 
+<div align="center">
+
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-00f0ff?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ALWINTR/Automated-Multi-Material-Waste-Classification-System)
 [![Developer](https://img.shields.io/badge/Developer-Alwin_T_R-0284c7?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/alwintr)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Portfolio](https://img.shields.io/badge/Portfolio-alwintr.github.io-00f0ff?style=for-the-badge&logo=googlechrome&logoColor=black)](https://alwintr.github.io)
+[![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)](LICENSE)
 
-An automated industrial-grade waste classification station that separates incoming waste into metallic and non-metallic categories using precision stepper motor rotary indexing, inductive proximity sensing, optical drop detection, and servo-actuated sorting flaps.
+</div>
 
----
-
-## System Architecture and Mechanics
-
-The system operates as a closed-loop classification station:
-1. **Intake and Drop Sensing**: The optical infrared sensor detects the arrival of an item in the inspection chute.
-2. **Material Classification**: The inductive proximity sensor tests the material. High Eddy-current dampening indicates metallic content; absence designates non-metallic waste.
-3. **Carousel Indexing**: A stepper motor rotates the carousel to position the correct bin compartment directly beneath the chute.
-4. **Sorting Actuation**: A high-torque micro-servo actuates the trapdoor flap to drop the material into the designated compartment.
-
-```
-       +-------------------------------+
-       |   Incoming Waste Insertion    |
-       +---------------+---------------+
-                       |
-                       v
-       +-------------------------------+
-       |  Optical IR Drop Detection    |
-       +---------------+---------------+
-                       | Item Present
-                       v
-       +-------------------------------+
-       |   Inductive Metal Sensing     |
-       +-------+---------------+-------+
-               |               |
-      [Metal Detected]   [Non-Metallic]
-               |               |
-               v               v
-       +-------------------------------+
-       |  Stepper Carousel Indexing    |
-       |  (Rotate to Designated Bin)   |
-       +---------------+---------------+
-                       |
-                       v
-       +-------------------------------+
-       |  Servo Trapdoor Flap Eject    |
-       +-------------------------------+
-```
+> Closed-loop industrial waste classification station utilizing precision NEMA 17 stepper carousel indexing, inductive metal detection, infrared drop verification, and high-speed servo diversion flaps.
 
 ---
 
-## Hardware Bill of Materials (BOM)
+## 📌 Executive Overview
 
-| Component | Specification | Functional Role |
+Closed-loop industrial waste classification station utilizing precision NEMA 17 stepper carousel indexing, inductive metal detection, infrared drop verification, and high-speed servo diversion flaps. This repository contains production-ready firmware implementations, hardware wiring pinouts, signal conditioning routines, and real-time telemetry pipelines engineered for reliable physical operation.
+
+- **Primary Domain**: Industrial Automation
+- **Microcontroller & Hardware Core**: Arduino / Stepper
+- **Specialization**: Industrial Automation
+- **Live Specs & BOM Viewer**: [alwintr.github.io](https://alwintr.github.io)
+
+---
+
+## 📐 System Architecture & Signal Flow
+
+```
+[ Feed Hopper ] ===> [ TCRT5000 IR Drop Beam ]
+                             | (Drop Trigger Interrupt)
+                             v
++--------------------------------------------------------------+
+|                     Arduino Uno ATmega328P                   |
++--------------------------------------------------------------+
+        |                                        |
+        | Step/Dir Pulses (1/16)                 | Dynamic Angle PWM
+        v                                        v
++-----------------------+              +-----------------------+
+|  A4988 Stepper Driver |              | SG90 Micro Servo Gate |
++-----------+-----------+              +-----------+-----------+
+            |                                      |
+            v                                      v
+  [ NEMA 17 Carousel (90 deg) ]        [ Metal / Non-Metal Bins ]
+            ^
+            |
+  [ Inductive Proximity Sensor ]
+```
+
+---
+
+## 📋 Hardware Bill of Materials (BOM)
+
+| Component Name | Operating Voltage | Interface / Functionality |
 | :--- | :--- | :--- |
-| **Microcontroller** | Arduino Uno (ATmega328P, 16MHz) | Master classification logic and motion sequencing |
-| **Stepper Motor** | NEMA 17 / 28BYJ-48 Geared Stepper | Precision rotary indexing of sorting bins |
-| **Stepper Driver** | A4988 / ULN2003 Driver Module | Microstepping coil excitation and current regulation |
-| **Inductive Proximity Sensor** | LJ12A3-4-Z/BX Probe | High-frequency Eddy current metal detection |
-| **Optical Drop Sensor** | TCRT5000 / FC-51 IR Module | Immediate detection of item arrival in hopper |
-| **Sorting Diverter Servo** | TowerPro SG90 9g Micro Servo | Rapid mechanical trapdoor ejection flap |
+| **Arduino Uno R3** | `5V DC` | Master state machine controller |
+| **NEMA 17 Stepper (42BYGHW)** | `12V / 1.5A` | 200 steps/rev, 1.8 deg step angle |
+| **A4988 Driver Carrier** | `8-35V VMOT` | 1/16 microstepping interpolation |
+| **LJ12A3-4-Z/BX Inductive Sensor** | `6-12V (Opto-isolated)` | 4mm detection range |
+| **TowerPro SG90 Servo** | `5V DC` | 180 deg diverter gate |
 
 ---
 
-## Circuit Pinout Table
+## 🔌 Circuit Pinout & Microcontroller Interconnect
 
-| Module Signal | Arduino Uno Pin | Direction | Description |
-| :--- | :--- | :--- | :--- |
-| **Stepper Phase A (IN1)** | Digital Pin D8 | Output | Coil phase 1 drive signal |
-| **Stepper Phase B (IN2)** | Digital Pin D9 | Output | Coil phase 2 drive signal |
-| **Stepper Phase C (IN3)** | Digital Pin D10 | Output | Coil phase 3 drive signal |
-| **Stepper Phase D (IN4)** | Digital Pin D11 | Output | Coil phase 4 drive signal |
-| **Servo PWM Signal** | Digital Pin D6 | PWM Output | Trapdoor open and close actuation |
-| **IR Drop Sensor** | Digital Pin D2 | Input (Pull-up) | External trigger for item arrival |
-| **Inductive Metal Sensor** | Digital Pin D3 | Input | Active LOW when metal is detected |
-| **Status LED (Metallic)** | Digital Pin D4 | Output | Visual indicator for metal classification |
-| **Status LED (Non-Metal)**| Digital Pin D5 | Output | Visual indicator for non-metal classification |
+| MCU Pin / Channel | Peripheral Pin | Signal Function / Bus |
+| :--- | :--- | :--- |
+| `Arduino Pin 3` | `A4988 STEP Pin` | Timer PWM Pulse Train |
+| `Arduino Pin 4` | `A4988 DIR Pin` | Carousel Rotation Direction |
+| `Arduino Pin 2` | `TCRT5000 IR Out` | Drop Beam Interrupt INT0 |
+| `Arduino Pin 7` | `Inductive Sensor Signal` | Metal Verification Input |
+| `Arduino Pin 9` | `SG90 Servo PWM` | Hardware Timer PWM Output |
 
 ---
 
-## Firmware State Machine
+## ⚙️ Firmware Architecture & Control Logic
 
-The firmware (`waste_segregation.ino`) implements a non-blocking finite state machine (FSM):
-- `STATE_IDLE`: Continuously polls the infrared sensor while holding the carousel at home index.
-- `STATE_INSPECT`: Samples the inductive sensor over 200ms to eliminate false negatives.
-- `STATE_INDEX_CAROUSEL`: Drives the stepper motor smoothly with acceleration profiling.
-- `STATE_DUMP`: Opens the servo trapdoor for 1200ms and verifies complete clearance.
-- `STATE_RESET`: Re-indexes the carousel back to baseline readiness.
+Deterministic state machine coordinating feed detection, 90-degree rotary indexing with trapezoidal acceleration, sensor settling delays, and servo deflection timing.
 
----
-
-## Author
-
-**Alwin T R** - Robotics and Automation Engineer  
-- LinkedIn: [linkedin.com/in/alwintr](https://www.linkedin.com/in/alwintr)  
-- Portfolio: [alwintr.github.io](https://alwintr.github.io)  
-- GitHub: [github.com/ALWINTR](https://github.com/ALWINTR)
+### Key Firmware Capabilities:
+- **Zero-Blocking Architecture**: Real-time non-blocking scheduling eliminating delay() deadlocks.
+- **Hardware Interrupt Servicing**: Microsecond-precision edge-triggered pulse detection and safety shutoffs.
+- **Diagnostic Telemetry**: Continuous serial datastreaming and state-machine transition logging.
 
 ---
 
-## License
+## 📁 Repository Structure
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+```
+Automated-Multi-Material-Waste-Classification-System/
+├── .gitignore
+├── IMPLEMENTATION_GUIDE.md
+├── LICENSE
+├── waste_segregation.ino
+└── README.md
+```
+
+---
+
+## 🚀 Build & Deployment Instructions
+
+### 1. Hardware Assembly
+- Verify common system ground across all microcontrollers, drivers, and peripheral sensor boards.
+- Ensure dedicated power supply rails match the operating voltage specified in the Hardware Bill of Materials.
+
+### 2. Firmware Compilation & Flashing
+```bash
+# Clone the repository
+git clone https://github.com/ALWINTR/Automated-Multi-Material-Waste-Classification-System.git
+
+# Navigate to the project directory
+cd Automated-Multi-Material-Waste-Classification-System
+```
+
+- Open the project in **Arduino IDE**, **PlatformIO**, or **ESP-IDF**.
+- Select the target board configuration and COM port.
+- Compile and upload firmware directly to the microcontroller.
+
+---
+
+## 👨‍💻 Author
+
+**Alwin T R** — Robotics & Automation Engineer  
+- 💼 **LinkedIn**: [linkedin.com/in/alwintr](https://www.linkedin.com/in/alwintr)  
+- 🌐 **Interactive Portfolio**: [alwintr.github.io](https://alwintr.github.io)  
+- 🐙 **GitHub**: [github.com/ALWINTR](https://github.com/ALWINTR)  
+- ✉️ **Direct Email**: [alwintr2003@gmail.com](mailto:alwintr2003@gmail.com)
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
